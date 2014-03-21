@@ -3,7 +3,7 @@ import uuid
 
 from SoftLayer.utils import query_filter
 
-from jumpgate.common.error_handling import not_found
+from jumpgate.common.error_handling import not_found, bad_request
 
 
 class SchemaImagesV2(object):
@@ -401,6 +401,101 @@ class SchemaImageV2(object):
         }
 
 
+class SchemaMemberV2(object):
+    # TODO - This needs to be updated for our specifications
+    def on_get(self, req, resp):
+        resp.body = {
+            "name": "member",
+            "properties": {
+                "created_at": {
+                    "description": "Date and time of image member creation",
+                    "type": "string"
+                },
+                "image_id": {
+                    "description": "An identifier for the image",
+                    "pattern": "^([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}$",
+                    "type": "string"
+                },
+                "member_id": {
+                    "description": "An identifier for the image member (tenantId)",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "The status of this image member",
+                    "enum": [
+                        "pending",
+                        "accepted",
+                        "rejected"
+                    ],
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "Date and time of last modification of image member",
+                    "type": "string"
+                },
+                "schema": {
+                    "type": "string"
+                }
+            }
+        }
+
+
+class SchemaMembersV2(object):
+    # TODO - This needs to be updated for our specifications
+    def on_get(self, req, resp):
+        resp.body = {
+            "name": "members",
+            "properties": {
+                "members": {
+                    "items": {
+                        "name": "member",
+                        "properties": {
+                            "created_at": {
+                                "description": "Date and time of image member creation",
+                                "type": "string"
+                            },
+                            "image_id": {
+                                "description": "An identifier for the image",
+                                "pattern": "^([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}$",
+                                "type": "string"
+                            },
+                            "member_id": {
+                                "description": "An identifier for the image member (tenantId)",
+                                "type": "string"
+                            },
+                            "status": {
+                                "description": "The status of this image member",
+                                "enum": [
+                                    "pending",
+                                    "accepted",
+                                    "rejected"
+                                ],
+                                "type": "string"
+                            },
+                            "updated_at": {
+                                "description": "Date and time of last modification of image member",
+                                "type": "string"
+                            },
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "type": "array"
+                },
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "links": [
+                {
+                    "href": "{schema}",
+                    "rel": "describedby"
+                }
+            ]
+        }
+
+
 class ImagesV2(object):
     def __init__(self, app):
         self.app = app
@@ -424,17 +519,30 @@ class ImagesV2(object):
     def on_post(self, req, resp, tenant_id=None):
         body = json.loads(req.stream.read().decode())
 
-        # TODO - Need to determine how to handle this for real
         image_id = body.get('id', str(uuid.uuid4()))
+        url = body.get('direct_url')
+        osRefCode = body.get('os_version', None)
+        if not all([url, osRefCode]):
+            raise bad_request(resp, "Swift url and OS code must be given")
 
+        configuration = {
+            'name': body.get('name'),
+            'note': '',
+            'operatingSystemReferenceCode': osRefCode,
+            'uri': url
+        }
+
+        image_service = req.env['sl_client'][
+            'SoftLayer_Virtual_Guest_Block_Device_Template_Group']
+        img = image_service.createFromExternalSource(configuration)
         resp.body = {
-            'id': image_id,
+            'id': img['globalIdentifier'],
             'name': body['name'],
             'status': 'queued',
-            'visibility': body.get('visibility', 'public'),
+            'visibility': 'private',
             'tags': [],
-            'created_at': '2012-08-11T17:15:52Z',
-            'updated_at': '2012-08-11T17:15:52Z',
+            'created_at': img['createDate'],
+            'updated_at': img['createDate'],
             'self': self.app.get_endpoint_url(
                 'image', req, 'v2_image', image_guid=image_id),
             'file': self.app.get_endpoint_url(
