@@ -438,7 +438,6 @@ class ImageV1(object):
         resp.set_headers(headers)
 
 class ImagesV1(object):
-
     def __init__(self, app):
         self.app = app
 
