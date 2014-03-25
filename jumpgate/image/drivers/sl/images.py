@@ -5,6 +5,7 @@ from SoftLayer.utils import query_filter
 
 from jumpgate.common.error_handling import not_found, bad_request
 
+
 class SchemaImageV2(object):
     # TODO - This needs to be updated for our specifications
     image_schema = {
@@ -225,6 +226,7 @@ class SchemaImagesV2(SchemaImageV2):
             ]
         }
 
+
 class SchemaMemberV2(object):
     # TODO - This needs to be updated for our specifications
     member_schema = {
@@ -265,6 +267,7 @@ class SchemaMemberV2(object):
     def on_get(self, req, resp):
         resp.body = self.member_schema
 
+
 class SchemaMembersV2(SchemaMemberV2):
     # TODO - This needs to be updated for our specifications
     def on_get(self, req, resp):
@@ -283,6 +286,7 @@ class SchemaMembersV2(SchemaMemberV2):
                 }
             ]
         }
+
 
 class ImagesV2(object):
     def __init__(self, app):
@@ -376,6 +380,7 @@ class ImagesV2(object):
         resp.body = {'images': sorted(output,
                                       key=lambda x: x['name'].lower())}
 
+
 class ImageV1(object):
     def __init__(self, app):
         self.app = app
@@ -436,6 +441,7 @@ class ImageV1(object):
         }
 
         resp.set_headers(headers)
+
 
 class ImagesV1(object):
     def __init__(self, app):
@@ -573,6 +579,7 @@ def get_v1_image_details_dict(app, req, image, tenant_id=None):
     }
 
     return results
+
 
 class SLImages(object):
     image_mask = ('id,accountId,name,globalIdentifier,blockDevices,parentId,'
